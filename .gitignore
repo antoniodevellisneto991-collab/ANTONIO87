@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.env
+*.json
+!package.json
+uploads/
+*.pdf
+*.mp3
+*.wav
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
