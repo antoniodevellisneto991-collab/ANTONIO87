@@ -121,23 +121,48 @@ def get_epub_metadata(file_path: str) -> dict:
     }
 
 
-def synthesize_speech(text: str, language: str = "pt-BR") -> bytes | None:
-    """Convert text to speech using Google Cloud Text-to-Speech."""
+# WaveNet neural voices mapped by language code
+WAVENET_VOICES = {
+    "pt-BR": "pt-BR-Wavenet-A",
+    "en-US": "en-US-Wavenet-F",
+    "es-ES": "es-ES-Wavenet-C",
+    "fr-FR": "fr-FR-Wavenet-C",
+    "de-DE": "de-DE-Wavenet-C",
+    "it-IT": "it-IT-Wavenet-A",
+    "ja-JP": "ja-JP-Wavenet-B",
+}
+
+
+def synthesize_speech(text: str, language: str = "pt-BR", voice_type: str = "wavenet") -> bytes | None:
+    """Convert text to speech using Google Cloud Text-to-Speech with Neural/WaveNet voices."""
     try:
         from google.cloud import texttospeech
         client = get_tts_client()
 
         synthesis_input = texttospeech.SynthesisInput(text=text[:5000])
-        voice = texttospeech.VoiceSelectionParams(
+
+        # Select voice: WaveNet (neural) or Neural2 for highest quality
+        voice_name = WAVENET_VOICES.get(language)
+
+        if voice_type == "neural2":
+            # Neural2 voices — even higher quality than WaveNet
+            voice_name = voice_name.replace("Wavenet", "Neural2") if voice_name else None
+
+        voice_params = texttospeech.VoiceSelectionParams(
             language_code=language,
+            name=voice_name,
             ssml_gender=texttospeech.SsmlVoiceGender.FEMALE,
         )
+
         audio_config = texttospeech.AudioConfig(
             audio_encoding=texttospeech.AudioEncoding.MP3,
             speaking_rate=0.95,
+            pitch=0.0,
+            effects_profile_id=["headphone-class-device"],
         )
+
         response = client.synthesize_speech(
-            input=synthesis_input, voice=voice, audio_config=audio_config
+            input=synthesis_input, voice=voice_params, audio_config=audio_config
         )
         return response.audio_content
     except Exception:
@@ -214,7 +239,8 @@ def text_to_speech():
 
     text = data["text"]
     language = data.get("language", "pt-BR")
-    audio = synthesize_speech(text, language)
+    voice_type = data.get("voice_type", "wavenet")  # wavenet | neural2
+    audio = synthesize_speech(text, language, voice_type)
 
     if audio is None:
         return jsonify({"error": "Text-to-Speech não disponível. Configure as credenciais do Google Cloud."}), 503

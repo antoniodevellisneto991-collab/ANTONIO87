@@ -341,12 +341,15 @@
         btnTts.classList.add("active");
         btnTts.innerHTML = '<span class="loading-spinner"></span> Carregando...';
 
+        var voiceType = document.getElementById("tts-voice-type").value;
+
         fetch("/tts", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 text: text,
                 language: ttsLanguage.value,
+                voice_type: voiceType,
             }),
         })
             .then(function (res) { return res.json(); })
