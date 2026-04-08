@@ -1,6 +1,6 @@
 /**
- * OpenAI Book Reader — Frontend
- * Leitor de TXT com voz neural OpenAI TTS
+ * Book Reader — Frontend
+ * Leitor de TXT com voz neural gratuita (Edge TTS)
  */
 (function () {
     "use strict";
@@ -10,6 +10,7 @@
     var currentPage = 0;
     var fontSize = 1.12;
     var isPlaying = false;
+    var autoMode = false;
 
     // DOM
     var screenUpload = document.getElementById("screen-upload");
@@ -23,7 +24,7 @@
 
     var readerText = document.getElementById("reader-text");
     var readerBody = document.getElementById("reader-body");
-    var fileName = document.getElementById("file-name");
+    var fileNameEl = document.getElementById("file-name");
     var curPage = document.getElementById("cur-page");
     var totPages = document.getElementById("tot-pages");
 
@@ -34,8 +35,10 @@
     var btnFontUp = document.getElementById("btn-font-up");
 
     var selVoice = document.getElementById("sel-voice");
-    var selModel = document.getElementById("sel-model");
+    var selRate = document.getElementById("sel-rate");
+    var rateLabel = document.getElementById("rate-label");
     var btnSpeak = document.getElementById("btn-speak");
+    var btnAuto = document.getElementById("btn-auto");
     var speakLabel = document.getElementById("speak-label");
     var iconPlay = document.getElementById("icon-play");
     var iconStop = document.getElementById("icon-stop");
@@ -49,7 +52,7 @@
 
     // ========== Theme ==========
     function initTheme() {
-        var saved = localStorage.getItem("oai-reader-theme");
+        var saved = localStorage.getItem("reader-theme");
         if (saved === "dark" || (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
             setDark(true);
         }
@@ -62,12 +65,24 @@
         }
         document.getElementById("icon-light").classList.toggle("hidden", on);
         document.getElementById("icon-dark").classList.toggle("hidden", !on);
-        localStorage.setItem("oai-reader-theme", on ? "dark" : "light");
+        localStorage.setItem("reader-theme", on ? "dark" : "light");
     }
     btnTheme.addEventListener("click", function () {
         setDark(document.documentElement.getAttribute("data-theme") !== "dark");
     });
     initTheme();
+
+    // ========== Speed slider ==========
+    selRate.addEventListener("input", function () {
+        var val = parseInt(selRate.value);
+        var speed = 1 + val / 100;
+        rateLabel.textContent = speed.toFixed(1) + "x";
+    });
+
+    function getRateStr() {
+        var val = parseInt(selRate.value);
+        return (val >= 0 ? "+" : "") + val + "%";
+    }
 
     // ========== Upload ==========
     btnSelect.addEventListener("click", function () { fileInput.click(); });
@@ -148,9 +163,9 @@
         bookData = data;
         currentPage = 0;
 
-        fileName.textContent = data.filename;
+        fileNameEl.textContent = data.filename;
         totPages.textContent = data.total_pages;
-        document.title = data.filename + " — OpenAI Book Reader";
+        document.title = data.filename + " — Book Reader";
 
         screenUpload.classList.add("hidden");
         screenReader.classList.remove("hidden");
@@ -175,7 +190,7 @@
     });
 
     document.addEventListener("keydown", function (e) {
-        if (!bookData || e.target.tagName === "SELECT") return;
+        if (!bookData || e.target.tagName === "SELECT" || e.target.tagName === "INPUT") return;
         if (e.key === "ArrowLeft" && currentPage > 0) { e.preventDefault(); renderPage(currentPage - 1); }
         if (e.key === "ArrowRight" && bookData && currentPage < bookData.pages.length - 1) { e.preventDefault(); renderPage(currentPage + 1); }
         if (e.key === " " && e.target.tagName !== "BUTTON") { e.preventDefault(); btnSpeak.click(); }
@@ -192,11 +207,22 @@
     // Back
     btnBack.addEventListener("click", function () {
         stopAudio();
+        autoMode = false;
+        btnAuto.classList.remove("active");
         bookData = null;
         screenReader.classList.add("hidden");
         screenUpload.classList.remove("hidden");
         resetUpload();
-        document.title = "OpenAI Book Reader";
+        document.title = "Book Reader";
+    });
+
+    // ========== Auto Mode ==========
+    btnAuto.addEventListener("click", function () {
+        autoMode = !autoMode;
+        btnAuto.classList.toggle("active", autoMode);
+        if (autoMode && !isPlaying) {
+            btnSpeak.click();
+        }
     });
 
     // ========== TTS ==========
@@ -206,9 +232,6 @@
 
         var text = bookData.pages[currentPage];
         if (!text || !text.trim()) { alert("Página vazia."); return; }
-
-        // Limit to 4096 chars
-        if (text.length > 4096) text = text.substring(0, 4096);
 
         isPlaying = true;
         btnSpeak.classList.add("playing");
@@ -222,7 +245,7 @@
             body: JSON.stringify({
                 text: text,
                 voice: selVoice.value,
-                model: selModel.value,
+                rate: getRateStr(),
             }),
         })
         .then(function (r) { return r.json(); })
@@ -241,20 +264,31 @@
             speakLabel.textContent = "Parar";
             audioBarWrap.classList.remove("hidden");
 
-            audioEl.addEventListener("ended", stopAudio, { once: true });
+            audioEl.addEventListener("ended", onAudioEnd, { once: true });
         })
         .catch(function () {
-            alert("Erro ao conectar ao serviço TTS.");
+            alert("Erro ao gerar áudio.");
             stopAudio();
         });
     });
+
+    function onAudioEnd() {
+        stopAudio();
+        // Auto mode: go to next page and play
+        if (autoMode && bookData && currentPage < bookData.pages.length - 1) {
+            renderPage(currentPage + 1);
+            setTimeout(function () { btnSpeak.click(); }, 500);
+        } else if (autoMode) {
+            autoMode = false;
+            btnAuto.classList.remove("active");
+        }
+    }
 
     // Audio progress
     audioEl.addEventListener("timeupdate", function () {
         if (!audioEl.duration) return;
         var pct = (audioEl.currentTime / audioEl.duration) * 100;
         audioFill.style.width = pct + "%";
-
         var m = Math.floor(audioEl.currentTime / 60);
         var s = Math.floor(audioEl.currentTime % 60);
         audioTime.textContent = m + ":" + (s < 10 ? "0" : "") + s;

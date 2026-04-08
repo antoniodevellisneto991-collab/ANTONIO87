@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenAI Book Reader — Leitor com Voz Neural</title>
+    <title>Book Reader — Voz Neural Gratuita</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Literata:wght@300;400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -18,7 +18,8 @@
                         <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
                         <path d="M8 7h8M8 11h6M8 15h4" stroke-width="1.5"/>
                     </svg>
-                    <span>OpenAI Book Reader</span>
+                    <span>Book Reader</span>
+                    <span class="badge-free">GRATUITO</span>
                 </div>
                 <button class="btn-icon" id="btn-theme" title="Alternar tema">
                     <svg id="icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -48,7 +49,7 @@
                 </div>
                 <h2>Envie seu livro .txt</h2>
                 <p>Arraste e solte ou clique para selecionar</p>
-                <span class="upload-hint">Arquivo de texto (.txt) &mdash; at&eacute; 20MB</span>
+                <span class="upload-hint">Arquivo de texto (.txt) &mdash; at&eacute; 20MB &mdash; Leitura 100% gratuita</span>
                 <input type="file" id="file-input" accept=".txt" hidden>
                 <button class="btn btn-primary" id="btn-select">Escolher Arquivo</button>
             </div>
@@ -90,13 +91,14 @@
                 <div class="audio-controls">
                     <select id="sel-voice" class="select" title="Voz neural">
                         {% for key, label in voices.items() %}
-                        <option value="{{ key }}" {% if key == 'nova' %}selected{% endif %}>{{ label }}</option>
+                        <option value="{{ key }}" {% if key == 'pt-BR-FranciscaNeural' %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
-                    <select id="sel-model" class="select" title="Qualidade">
-                        <option value="tts-1-hd">HD (Alta Qualidade)</option>
-                        <option value="tts-1">Standard (R&aacute;pido)</option>
-                    </select>
+                    <div class="speed-control">
+                        <label>Velocidade</label>
+                        <input type="range" id="sel-rate" min="-50" max="100" value="0" step="10" title="Velocidade da fala">
+                        <span id="rate-label">1.0x</span>
+                    </div>
                     <button class="btn btn-speak" id="btn-speak">
                         <svg id="icon-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
@@ -107,6 +109,12 @@
                             <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
                         </svg>
                         <span id="speak-label">Ouvir P&aacute;gina</span>
+                    </button>
+                    <button class="btn btn-ghost btn-auto" id="btn-auto" title="Ler todas as páginas automaticamente">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="5 3 19 12 5 21 5 3"/>
+                        </svg>
+                        Auto
                     </button>
                 </div>
                 <div class="audio-progress hidden" id="audio-bar-wrap">
@@ -119,7 +127,7 @@
         <audio id="audio-el" hidden></audio>
 
         <footer class="footer">
-            <p>Powered by OpenAI TTS &mdash; Neural Voices</p>
+            <p>Powered by Microsoft Edge TTS &mdash; Vozes neurais gratuitas &mdash; Sem API key, sem custo</p>
         </footer>
     </div>
 
