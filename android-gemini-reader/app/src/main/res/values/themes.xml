@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.GeminiBookReader" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/purple</item>
+        <item name="colorPrimaryContainer">@color/purple_light</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="android:statusBarColor">@color/purple</item>
+    </style>
+
+    <style name="Theme.GeminiBookReader.Dark" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/purple_light</item>
+        <item name="colorPrimaryContainer">@color/purple_dark</item>
+        <item name="android:statusBarColor">@color/bg_dark</item>
+    </style>
+</resources>

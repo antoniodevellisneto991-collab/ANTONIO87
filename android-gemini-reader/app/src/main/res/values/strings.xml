@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Gemini Book Reader</string>
+    <string name="select_file">Escolher Arquivo .txt</string>
+    <string name="listen">Ouvir Página</string>
+    <string name="stop">Parar</string>
+    <string name="generating">Gerando com Gemini...</string>
+    <string name="page_format">%1$d / %2$d</string>
+    <string name="no_text">Nenhum texto carregado</string>
+    <string name="style_narrator">Narrador</string>
+    <string name="style_dramatic">Dramático</string>
+    <string name="style_gentle">Suave</string>
+    <string name="style_energetic">Energético</string>
+    <string name="style_neutral">Neutro</string>
+    <string name="style_poetic">Poético</string>
+
+    <string-array name="reading_styles">
+        <item>Narrador</item>
+        <item>Dramático</item>
+        <item>Suave</item>
+        <item>Energético</item>
+        <item>Neutro</item>
+        <item>Poético</item>
+    </string-array>
+</resources>

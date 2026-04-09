@@ -35,9 +35,15 @@ def get_client():
     global _client
     if _client is None:
         api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            raise RuntimeError("GEMINI_API_KEY não configurada. Pegue em: https://console.cloud.google.com/vertex-ai/studio/media/speech")
-        _client = genai.Client(api_key=api_key)
+        if api_key:
+            _client = genai.Client(api_key=api_key)
+        else:
+            # Fallback: usar Application Default Credentials (gcloud auth)
+            _client = genai.Client(
+                vertexai=True,
+                project=os.getenv("GOOGLE_CLOUD_PROJECT", "crucial-nuance-492615-a7"),
+                location="us-central1",
+            )
     return _client
 
 

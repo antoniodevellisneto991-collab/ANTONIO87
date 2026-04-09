@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_light">
+
+    <!-- Toolbar -->
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="@color/card_light"
+        android:elevation="2dp"
+        app:title="Gemini Book Reader"
+        app:titleTextColor="@color/text_primary_light"
+        app:subtitleTextColor="@color/text_secondary" />
+
+    <!-- Upload Section -->
+    <LinearLayout
+        android:id="@+id/uploadSection"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="32dp">
+
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/ic_book"
+            android:layout_marginBottom="16dp"
+            app:tint="@color/purple" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Envie seu livro .txt"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary_light"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Gemini 2.5 Flash TTS — Voz IA de última geração"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginBottom="24dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSelectFile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/select_file"
+            app:cornerRadius="8dp" />
+    </LinearLayout>
+
+    <!-- Reader Section -->
+    <LinearLayout
+        android:id="@+id/readerSection"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <!-- Navigation Bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:background="@color/card_light"
+            android:elevation="1dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnBack"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Novo"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/tvFileName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textSize="13sp"
+                android:textColor="@color/text_secondary"
+                android:paddingHorizontal="8dp" />
+
+            <ImageButton
+                android:id="@+id/btnPrev"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_prev"
+                android:contentDescription="Anterior"
+                app:tint="@color/text_primary_light" />
+
+            <TextView
+                android:id="@+id/tvPageInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1 / 1"
+                android:textSize="13sp"
+                android:textColor="@color/text_secondary"
+                android:paddingHorizontal="8dp" />
+
+            <ImageButton
+                android:id="@+id/btnNext"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_next"
+                android:contentDescription="Próxima"
+                app:tint="@color/text_primary_light" />
+
+            <ImageButton
+                android:id="@+id/btnFontDown"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_font_down"
+                android:contentDescription="Diminuir fonte"
+                app:tint="@color/text_primary_light" />
+
+            <ImageButton
+                android:id="@+id/btnFontUp"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_font_up"
+                android:contentDescription="Aumentar fonte"
+                app:tint="@color/text_primary_light" />
+        </LinearLayout>
+
+        <!-- Text Content -->
+        <ScrollView
+            android:id="@+id/scrollView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:padding="24dp">
+
+            <TextView
+                android:id="@+id/tvContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="18sp"
+                android:lineSpacingMultiplier="1.8"
+                android:textColor="@color/text_primary_light"
+                android:fontFamily="serif" />
+        </ScrollView>
+
+        <!-- Audio Panel -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp"
+            android:background="@color/card_light"
+            android:elevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <Spinner
+                    android:id="@+id/spinnerStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:entries="@array/reading_styles"
+                    android:layout_marginEnd="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSpeak"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/listen"
+                    app:icon="@drawable/ic_volume"
+                    app:cornerRadius="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAuto"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Auto"
+                    android:layout_marginStart="8dp"
+                    app:cornerRadius="8dp" />
+            </LinearLayout>
+
+            <!-- Progress -->
+            <LinearLayout
+                android:id="@+id/audioProgress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="8dp"
+                android:visibility="gone">
+
+                <ProgressBar
+                    android:id="@+id/progressAudio"
+                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:progressTint="@color/purple" />
+
+                <TextView
+                    android:id="@+id/tvAudioTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0:00"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginStart="8dp" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>
