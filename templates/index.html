@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Book Reader - Leitor EPUB</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    <h1>Cloud Book Reader</h1>
+                </div>
+                <button id="btn-theme" class="btn-icon" title="Alternar tema">
+                    <svg id="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                    <svg id="icon-moon" class="hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Upload Section -->
+        <section id="upload-section" class="upload-section">
+            <div class="upload-area" id="drop-zone">
+                <div class="upload-icon">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                </div>
+                <h2>Envie seu livro EPUB</h2>
+                <p>Arraste e solte ou clique para selecionar</p>
+                <p class="upload-formats">Formato suportado: EPUB (max 50MB)</p>
+                <input type="file" id="file-input" accept=".epub" hidden>
+                <button class="btn btn-primary" id="btn-select">Selecionar Arquivo</button>
+            </div>
+            <div id="upload-progress" class="upload-progress hidden">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <p id="upload-status">Processando seu livro...</p>
+            </div>
+        </section>
+
+        <!-- Reader Section -->
+        <section id="reader-section" class="reader-section hidden">
+            <!-- Sidebar / Table of Contents -->
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <div class="book-cover" id="book-cover"></div>
+                    <div class="book-info">
+                        <h3 id="meta-title"></h3>
+                        <p id="meta-author"></p>
+                    </div>
+                </div>
+                <nav class="toc" id="toc"></nav>
+                <button class="btn btn-secondary sidebar-back" id="btn-back">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    Novo Livro
+                </button>
+            </aside>
+
+            <!-- Main Reader -->
+            <main class="reader-main">
+                <div class="reader-toolbar">
+                    <div class="toolbar-left">
+                        <button class="btn-icon" id="btn-toggle-sidebar" title="Menu">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="3" y1="12" x2="21" y2="12"></line>
+                                <line x1="3" y1="6" x2="21" y2="6"></line>
+                                <line x1="3" y1="18" x2="21" y2="18"></line>
+                            </svg>
+                        </button>
+                        <span class="chapter-title" id="chapter-title"></span>
+                    </div>
+                    <div class="toolbar-center">
+                        <button class="btn-icon" id="btn-prev" title="Cap&iacute;tulo anterior">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="15 18 9 12 15 6"></polyline>
+                            </svg>
+                        </button>
+                        <span class="page-indicator">
+                            <span id="current-chapter">1</span> / <span id="total-chapters">1</span>
+                        </span>
+                        <button class="btn-icon" id="btn-next" title="Pr&oacute;ximo cap&iacute;tulo">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="toolbar-right">
+                        <button class="btn-icon" id="btn-font-decrease" title="Diminuir fonte">A-</button>
+                        <button class="btn-icon" id="btn-font-increase" title="Aumentar fonte">A+</button>
+                        <select id="tts-voice-type" class="select-language" title="Tipo de voz">
+                            <option value="wavenet">WaveNet Neural</option>
+                            <option value="neural2">Neural2 (Premium)</option>
+                        </select>
+                        <select id="tts-language" class="select-language" title="Idioma da voz">
+                            <option value="pt-BR">PT-BR</option>
+                            <option value="en-US">EN</option>
+                            <option value="es-ES">ES</option>
+                            <option value="fr-FR">FR</option>
+                            <option value="de-DE">DE</option>
+                            <option value="it-IT">IT</option>
+                            <option value="ja-JP">JA</option>
+                        </select>
+                        <button class="btn btn-accent" id="btn-tts" title="Ler em voz alta">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                            </svg>
+                            Ouvir
+                        </button>
+                    </div>
+                </div>
+                <div class="reader-content" id="reader-content">
+                    <div class="page-content" id="page-content"></div>
+                </div>
+            </main>
+        </section>
+
+        <!-- Audio Player (hidden) -->
+        <audio id="audio-player" hidden></audio>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Powered by Google Cloud &mdash; Text-to-Speech &amp; Cloud Storage</p>
+        </footer>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
