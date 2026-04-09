@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Book Reader — Voz IA de Última Geração</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Literata:wght@300;400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <div class="header-inner">
+                <div class="logo">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                        <path d="M8 7h8M8 11h6M8 15h4" stroke-width="1.5"/>
+                    </svg>
+                    <span>Gemini Book Reader</span>
+                    <span class="badge">2.5 Flash TTS</span>
+                </div>
+                <button class="btn-icon" id="btn-theme" title="Alternar tema">
+                    <svg id="icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                    <svg id="icon-dark" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Upload -->
+        <main id="screen-upload" class="screen-upload">
+            <div class="upload-card" id="drop-zone">
+                <div class="upload-graphic">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                    </svg>
+                </div>
+                <h2>Envie seu livro .txt</h2>
+                <p>Arraste e solte ou clique para selecionar</p>
+                <span class="upload-hint">Gemini 2.5 Flash TTS &mdash; Voz IA de &uacute;ltima gera&ccedil;&atilde;o &mdash; $300 gr&aacute;tis</span>
+                <input type="file" id="file-input" accept=".txt" hidden>
+                <button class="btn btn-primary" id="btn-select">Escolher Arquivo</button>
+            </div>
+            <div id="upload-progress" class="progress-area hidden">
+                <div class="progress-track"><div class="progress-bar" id="progress-bar"></div></div>
+                <p id="progress-text">Enviando...</p>
+            </div>
+        </main>
+
+        <!-- Reader -->
+        <main id="screen-reader" class="screen-reader hidden">
+            <div class="toolbar">
+                <div class="toolbar-group">
+                    <button class="btn btn-ghost" id="btn-back">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                        Novo
+                    </button>
+                    <span class="file-name" id="file-name"></span>
+                </div>
+                <div class="toolbar-group toolbar-nav">
+                    <button class="btn-icon" id="btn-prev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+                    <span class="page-info"><span id="cur-page">1</span> / <span id="tot-pages">1</span></span>
+                    <button class="btn-icon" id="btn-next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
+                </div>
+                <div class="toolbar-group toolbar-actions">
+                    <button class="btn-icon btn-font" id="btn-font-down">A-</button>
+                    <button class="btn-icon btn-font" id="btn-font-up">A+</button>
+                </div>
+            </div>
+
+            <div class="reader-body" id="reader-body">
+                <div class="reader-text" id="reader-text"></div>
+            </div>
+
+            <!-- Audio Panel -->
+            <div class="audio-panel">
+                <div class="audio-controls">
+                    <select id="sel-style" class="select" title="Estilo de leitura">
+                        {% for key, label in styles.items() %}
+                        <option value="{{ key }}" {% if key == 'narrador' %}selected{% endif %}>{{ key|capitalize }} — {{ label[:40] }}...</option>
+                        {% endfor %}
+                    </select>
+                    <select id="sel-language" class="select" title="Idioma">
+                        {% for key, label in languages.items() %}
+                        <option value="{{ key }}" {% if key == 'pt-BR' %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn btn-speak" id="btn-speak">
+                        <svg id="icon-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                        </svg>
+                        <svg id="icon-stop" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+                        </svg>
+                        <span id="speak-label">Ouvir P&aacute;gina</span>
+                    </button>
+                    <button class="btn btn-ghost btn-auto" id="btn-auto" title="Ler tudo automaticamente">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        Auto
+                    </button>
+                </div>
+                <div class="audio-progress hidden" id="audio-bar-wrap">
+                    <div class="audio-track"><div class="audio-fill" id="audio-fill"></div></div>
+                    <span class="audio-time" id="audio-time">0:00</span>
+                </div>
+            </div>
+        </main>
+
+        <audio id="audio-el" hidden></audio>
+
+        <footer class="footer">
+            <p>Gemini 2.5 Flash TTS &mdash; Voz IA de &uacute;ltima gera&ccedil;&atilde;o &mdash; Google Cloud $300 cr&eacute;ditos gr&aacute;tis</p>
+        </footer>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
