@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini Book Reader — Voz IA de Última Geração</title>
+    <title>Gemini Book Reader — Pro &amp; Flash TTS 2.5</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Literata:wght@300;400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -95,6 +95,15 @@
                         <option value="{{ key }}" {% if key == 'pt-BR' %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
+                    <select id="sel-model" class="select" title="Modelo">
+                        <option value="pro" selected>Gemini 2.5 Pro (Melhor)</option>
+                        <option value="flash">Gemini 2.5 Flash (R&aacute;pido)</option>
+                    </select>
+                    <select id="sel-voice" class="select" title="Voz">
+                        {% for key, label in voices.items() %}
+                        <option value="{{ key }}" {% if key == 'Kore' %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
                     <button class="btn btn-speak" id="btn-speak">
                         <svg id="icon-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
@@ -121,7 +130,7 @@
         <audio id="audio-el" hidden></audio>
 
         <footer class="footer">
-            <p>Gemini 2.5 Flash TTS &mdash; Voz IA de &uacute;ltima gera&ccedil;&atilde;o &mdash; Google Cloud $300 cr&eacute;ditos gr&aacute;tis</p>
+            <p>Gemini 2.5 Pro &amp; Flash TTS &mdash; 8 vozes neurais &mdash; 6 estilos de leitura &mdash; $300 cr&eacute;ditos gr&aacute;tis</p>
         </footer>
     </div>
 

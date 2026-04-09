@@ -107,22 +107,44 @@ def parse_txt(file_path: str) -> dict:
     }
 
 
-def synthesize_speech(text: str, style: str = "narrador", language: str = "pt-BR") -> bytes:
-    """Generate speech using Gemini 2.5 Flash TTS."""
+MODELS = {
+    "pro": "gemini-2.5-pro-preview-tts",
+    "flash": "gemini-2.5-flash-preview-tts",
+}
+
+# Gemini TTS voices
+VOICE_OPTIONS = {
+    "Kore": "Kore — Feminina, firme e clara",
+    "Charon": "Charon — Masculina, profunda e quente",
+    "Fenrir": "Fenrir — Masculina, expressiva",
+    "Aoede": "Aoede — Feminina, suave e melódica",
+    "Puck": "Puck — Masculina, jovem e energética",
+    "Leda": "Leda — Feminina, natural e amigável",
+    "Orus": "Orus — Masculina, grave e autoritária",
+    "Zephyr": "Zephyr — Neutra, leve e clara",
+}
+
+
+def synthesize_speech(text: str, style: str = "narrador", language: str = "pt-BR", model: str = "pro", voice: str = "Kore") -> bytes:
+    """Generate speech using Gemini 2.5 Pro/Flash TTS."""
     client = get_client()
 
     style_instruction = STYLES.get(style, STYLES["narrador"])
     lang_name = LANGUAGES.get(language, "Português (Brasil)")
+    model_name = MODELS.get(model, MODELS["pro"])
+
+    if voice not in VOICE_OPTIONS:
+        voice = "Kore"
 
     response = client.models.generate_content(
-        model="gemini-2.5-flash-preview-tts",
+        model=model_name,
         contents=text,
         config=types.GenerateContentConfig(
             response_modalities=["AUDIO"],
             speech_config=types.SpeechConfig(
                 voice_config=types.VoiceConfig(
                     prebuilt_voice_config=types.PrebuiltVoiceConfig(
-                        voice_name="Kore",
+                        voice_name=voice,
                     )
                 ),
                 language_code=language,
@@ -149,7 +171,7 @@ def synthesize_speech(text: str, style: str = "narrador", language: str = "pt-BR
 
 @app.route("/")
 def index():
-    return render_template("index.html", styles=STYLES, languages=LANGUAGES)
+    return render_template("index.html", styles=STYLES, languages=LANGUAGES, voices=VOICE_OPTIONS, models=MODELS)
 
 
 @app.route("/upload", methods=["POST"])
@@ -191,12 +213,14 @@ def text_to_speech():
     text = data["text"]
     style = data.get("style", "narrador")
     language = data.get("language", "pt-BR")
+    model = data.get("model", "pro")
+    voice = data.get("voice", "Kore")
 
     if style not in STYLES:
         return jsonify({"error": "Estilo inválido"}), 400
 
     try:
-        audio = synthesize_speech(text, style, language)
+        audio = synthesize_speech(text, style, language, model, voice)
         audio_b64 = base64.b64encode(audio).decode("utf-8")
         return jsonify({"audio": audio_b64, "format": "wav"})
     except Exception as e:

@@ -232,7 +232,7 @@ class MainActivity : AppCompatActivity() {
 
     private suspend fun generateSpeech(text: String, styleInstruction: String): ByteArray? {
         val model = GenerativeModel(
-            modelName = "gemini-2.5-flash-preview-tts",
+            modelName = "gemini-2.5-pro-preview-tts",
             apiKey = BuildConfig.GEMINI_API_KEY,
             generationConfig = generationConfig {
                 responseMimeType = "audio/pcm"

@@ -27,6 +27,8 @@
     var btnFontUp = document.getElementById("btn-font-up");
     var selStyle = document.getElementById("sel-style");
     var selLanguage = document.getElementById("sel-language");
+    var selModel = document.getElementById("sel-model");
+    var selVoice = document.getElementById("sel-voice");
     var btnSpeak = document.getElementById("btn-speak");
     var btnAuto = document.getElementById("btn-auto");
     var speakLabel = document.getElementById("speak-label");
@@ -130,7 +132,7 @@
         fetch("/tts", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: text, style: selStyle.value, language: selLanguage.value }),
+            body: JSON.stringify({ text: text, style: selStyle.value, language: selLanguage.value, model: selModel.value, voice: selVoice.value }),
         })
         .then(function (r) { return r.json(); })
         .then(function (data) {
