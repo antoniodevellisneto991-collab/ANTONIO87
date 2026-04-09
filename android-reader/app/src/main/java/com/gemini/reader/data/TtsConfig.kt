@@ -4,6 +4,7 @@ package com.gemini.reader.data
 enum class TtsModel(val id: String, val label: String) {
     PRO("gemini-2.5-pro-tts", "Gemini 2.5 Pro TTS"),
     FLASH("gemini-2.5-flash-tts", "Gemini 2.5 Flash TTS"),
+    FLASH_LITE("gemini-2.5-flash-lite-preview-tts", "Gemini 2.5 Flash Lite (Preview)"),
 }
 
 /** Gender for display only. */

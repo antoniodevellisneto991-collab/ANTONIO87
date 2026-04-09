@@ -47,8 +47,9 @@ def get_client():
 
 # --- Models ---
 MODELS = {
-    "gemini-2.5-pro-tts": "Gemini 2.5 Pro TTS — Qualidade maxima, controle avancado",
-    "gemini-2.5-flash-tts": "Gemini 2.5 Flash TTS — Rapido e eficiente",
+    "gemini-2.5-pro-tts": "Gemini 2.5 Pro TTS — Audiobooks, podcasts, qualidade maxima",
+    "gemini-2.5-flash-tts": "Gemini 2.5 Flash TTS — Baixa latencia, multi-speaker",
+    "gemini-2.5-flash-lite-preview-tts": "Gemini 2.5 Flash Lite TTS — Ultra rapido, economico (preview)",
 }
 
 # --- 30 Gemini TTS Voices ---
