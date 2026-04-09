@@ -249,6 +249,98 @@ def text_to_speech():
     return jsonify({"audio": audio_b64, "format": "mp3"})
 
 
+@app.route("/org-policies/delete", methods=["POST"])
+def delete_org_policy_route():
+    """Delete an organization policy.
+
+    Equivalent to: gcloud org-policies delete CONSTRAINT_NAME --organization=ORG_ID
+    """
+    from org_policies import delete_org_policy, get_org_policy
+
+    data = request.get_json()
+    if not data or "constraint" not in data:
+        return jsonify({"error": "Campo 'constraint' obrigatório"}), 400
+
+    constraint = data["constraint"]
+    organization = data.get("organization")
+    project = data.get("project")
+    folder = data.get("folder")
+
+    if not any([organization, project, folder]):
+        return jsonify({
+            "error": "Informe 'organization', 'project' ou 'folder'"
+        }), 400
+
+    try:
+        # Verify the policy exists before deleting
+        policy_info = get_org_policy(
+            constraint, organization=organization,
+            project=project, folder=folder
+        )
+    except Exception:
+        policy_info = None
+
+    try:
+        result = delete_org_policy(
+            constraint, organization=organization,
+            project=project, folder=folder
+        )
+        result["previous_policy"] = policy_info
+        return jsonify(result)
+    except Exception as e:
+        error_type = type(e).__name__
+        return jsonify({"error": f"{error_type}: {e}"}), 500
+
+
+@app.route("/org-policies/list", methods=["GET"])
+def list_org_policies_route():
+    """List organization policies for a parent resource."""
+    from org_policies import list_org_policies
+
+    organization = request.args.get("organization")
+    project = request.args.get("project")
+    folder = request.args.get("folder")
+
+    if not any([organization, project, folder]):
+        return jsonify({
+            "error": "Informe 'organization', 'project' ou 'folder'"
+        }), 400
+
+    try:
+        policies = list_org_policies(
+            organization=organization, project=project, folder=folder
+        )
+        return jsonify({"policies": policies, "total": len(policies)})
+    except Exception as e:
+        error_type = type(e).__name__
+        return jsonify({"error": f"{error_type}: {e}"}), 500
+
+
+@app.route("/org-policies/<path:constraint>", methods=["GET"])
+def get_org_policy_route(constraint):
+    """Get details of a specific organization policy."""
+    from org_policies import get_org_policy
+
+    organization = request.args.get("organization")
+    project = request.args.get("project")
+    folder = request.args.get("folder")
+
+    if not any([organization, project, folder]):
+        return jsonify({
+            "error": "Informe 'organization', 'project' ou 'folder'"
+        }), 400
+
+    try:
+        policy = get_org_policy(
+            constraint, organization=organization,
+            project=project, folder=folder
+        )
+        return jsonify(policy)
+    except Exception as e:
+        error_type = type(e).__name__
+        return jsonify({"error": f"{error_type}: {e}"}), 500
+
+
 @app.route("/health")
 def health():
     return jsonify({"status": "ok", "service": "Google Cloud Book Reader"})
