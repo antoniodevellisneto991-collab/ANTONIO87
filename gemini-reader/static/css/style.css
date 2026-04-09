@@ -37,7 +37,7 @@ body { font-family: var(--font-ui); background: var(--bg); color: var(--text); l
 .btn-icon svg { width: 18px; height: 18px; }
 .btn-icon:hover { background: var(--accent-soft); }
 .btn-font { font-family: var(--font-ui); font-size: 0.75rem; font-weight: 700; }
-.select { padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-card); color: var(--text); font-family: var(--font-ui); font-size: 0.8rem; cursor: pointer; max-width: 280px; }
+.select { padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-card); color: var(--text); font-family: var(--font-ui); font-size: 0.8rem; cursor: pointer; max-width: 240px; min-width: 0; }
 
 .screen-upload { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; }
 .upload-card { width: 100%; max-width: 480px; padding: 50px 36px; background: var(--bg-card); border: 2px dashed var(--border); border-radius: var(--radius); text-align: center; cursor: pointer; transition: all 0.25s; }
@@ -87,6 +87,6 @@ body { font-family: var(--font-ui); background: var(--bg); color: var(--text); l
     .reader-body { padding: 24px 16px; }
     .reader-text { font-size: 1rem; line-height: 1.75; }
     .audio-controls { gap: 6px; }
-    .select { max-width: 160px; font-size: 0.75rem; }
+    .select { max-width: 140px; font-size: 0.72rem; }
     .toolbar { padding: 0 8px; }
 }

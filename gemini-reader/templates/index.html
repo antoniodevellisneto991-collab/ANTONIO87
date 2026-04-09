@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini Book Reader — Voz IA de Última Geração</title>
+    <title>Gemini Book Reader — Pro + Flash TTS</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Literata:wght@300;400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -18,7 +18,7 @@
                         <path d="M8 7h8M8 11h6M8 15h4" stroke-width="1.5"/>
                     </svg>
                     <span>Gemini Book Reader</span>
-                    <span class="badge">2.5 Flash TTS</span>
+                    <span class="badge">Pro + Flash TTS</span>
                 </div>
                 <button class="btn-icon" id="btn-theme" title="Alternar tema">
                     <svg id="icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -47,7 +47,7 @@
                 </div>
                 <h2>Envie seu livro .txt</h2>
                 <p>Arraste e solte ou clique para selecionar</p>
-                <span class="upload-hint">Gemini 2.5 Flash TTS &mdash; Voz IA de &uacute;ltima gera&ccedil;&atilde;o &mdash; $300 gr&aacute;tis</span>
+                <span class="upload-hint">Gemini 2.5 Pro + Flash TTS &mdash; 30 vozes neurais &mdash; Multi-speaker</span>
                 <input type="file" id="file-input" accept=".txt" hidden>
                 <button class="btn btn-primary" id="btn-select">Escolher Arquivo</button>
             </div>
@@ -85,9 +85,19 @@
             <!-- Audio Panel -->
             <div class="audio-panel">
                 <div class="audio-controls">
+                    <select id="sel-model" class="select" title="Modelo TTS">
+                        {% for key, label in models.items() %}
+                        <option value="{{ key }}" {% if key == 'gemini-2.5-pro-tts' %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <select id="sel-voice" class="select" title="Voz">
+                        {% for name, info in voices.items() %}
+                        <option value="{{ name }}" {% if name == 'Kore' %}selected{% endif %}>{{ info.label }}</option>
+                        {% endfor %}
+                    </select>
                     <select id="sel-style" class="select" title="Estilo de leitura">
                         {% for key, label in styles.items() %}
-                        <option value="{{ key }}" {% if key == 'narrador' %}selected{% endif %}>{{ key|capitalize }} — {{ label[:40] }}...</option>
+                        <option value="{{ key }}" {% if key == 'narrador' %}selected{% endif %}>{{ key|capitalize }}</option>
                         {% endfor %}
                     </select>
                     <select id="sel-language" class="select" title="Idioma">
@@ -104,7 +114,7 @@
                         <svg id="icon-stop" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
                         </svg>
-                        <span id="speak-label">Ouvir P&aacute;gina</span>
+                        <span id="speak-label">Ouvir Pagina</span>
                     </button>
                     <button class="btn btn-ghost btn-auto" id="btn-auto" title="Ler tudo automaticamente">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -121,7 +131,7 @@
         <audio id="audio-el" hidden></audio>
 
         <footer class="footer">
-            <p>Gemini 2.5 Flash TTS &mdash; Voz IA de &uacute;ltima gera&ccedil;&atilde;o &mdash; Google Cloud $300 cr&eacute;ditos gr&aacute;tis</p>
+            <p>Gemini 2.5 Pro + Flash TTS &mdash; 30 vozes neurais &mdash; Multi-speaker &mdash; Google Cloud</p>
         </footer>
     </div>
 

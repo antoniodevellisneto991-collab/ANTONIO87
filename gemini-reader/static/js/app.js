@@ -1,6 +1,7 @@
 /**
  * Gemini Book Reader — Frontend
- * Leitor de TXT com Gemini 2.5 Flash TTS
+ * Leitor de TXT com Gemini 2.5 Pro + Flash TTS
+ * 30 vozes neurais, multi-speaker, controle de estilo
  */
 (function () {
     "use strict";
@@ -25,6 +26,8 @@
     var btnNext = document.getElementById("btn-next");
     var btnFontDown = document.getElementById("btn-font-down");
     var btnFontUp = document.getElementById("btn-font-up");
+    var selModel = document.getElementById("sel-model");
+    var selVoice = document.getElementById("sel-voice");
     var selStyle = document.getElementById("sel-style");
     var selLanguage = document.getElementById("sel-language");
     var btnSpeak = document.getElementById("btn-speak");
@@ -80,7 +83,7 @@
             if (xhr.status === 200) { progressBar.style.width = "100%"; progressText.textContent = "Pronto!"; setTimeout(function () { openBook(JSON.parse(xhr.responseText)); }, 200); }
             else { var err = JSON.parse(xhr.responseText); progressText.textContent = "Erro: " + (err.error || "Falha"); setTimeout(resetUpload, 2000); }
         });
-        xhr.addEventListener("error", function () { progressText.textContent = "Erro de conexão."; setTimeout(resetUpload, 2000); });
+        xhr.addEventListener("error", function () { progressText.textContent = "Erro de conexao."; setTimeout(resetUpload, 2000); });
         xhr.send(fd);
     }
 
@@ -121,7 +124,7 @@
         if (isPlaying) { stopAudio(); return; }
         if (!bookData) return;
         var text = bookData.pages[currentPage];
-        if (!text || !text.trim()) { alert("Página vazia."); return; }
+        if (!text || !text.trim()) { alert("Pagina vazia."); return; }
 
         isPlaying = true; btnSpeak.classList.add("playing");
         iconPlay.classList.add("hidden"); iconStop.classList.add("hidden");
@@ -130,18 +133,24 @@
         fetch("/tts", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: text, style: selStyle.value, language: selLanguage.value }),
+            body: JSON.stringify({
+                text: text,
+                style: selStyle.value,
+                language: selLanguage.value,
+                voice: selVoice.value,
+                model: selModel.value,
+            }),
         })
         .then(function (r) { return r.json(); })
         .then(function (data) {
             if (data.error) { alert(data.error); stopAudio(); return; }
-            audioEl.src = "data:audio/wav;base64," + data.audio;
+            audioEl.src = "data:audio/mp3;base64," + data.audio;
             audioEl.play();
             iconPlay.classList.add("hidden"); iconStop.classList.remove("hidden");
             speakLabel.textContent = "Parar"; audioBarWrap.classList.remove("hidden");
             audioEl.addEventListener("ended", onEnd, { once: true });
         })
-        .catch(function () { alert("Erro ao gerar áudio."); stopAudio(); });
+        .catch(function () { alert("Erro ao gerar audio."); stopAudio(); });
     });
 
     function onEnd() {
@@ -160,6 +169,6 @@
     function stopAudio() {
         isPlaying = false; audioEl.pause(); audioEl.currentTime = 0;
         btnSpeak.classList.remove("playing"); iconPlay.classList.remove("hidden"); iconStop.classList.add("hidden");
-        speakLabel.textContent = "Ouvir Página"; audioBarWrap.classList.add("hidden"); audioFill.style.width = "0%"; audioTime.textContent = "0:00";
+        speakLabel.textContent = "Ouvir Pagina"; audioBarWrap.classList.add("hidden"); audioFill.style.width = "0%"; audioTime.textContent = "0:00";
     }
 })();
