@@ -5,6 +5,7 @@ Leitor de livros EPUB com Text-to-Speech (Google Cloud) e Cloud Storage.
 
 import os
 import io
+import re
 import uuid
 import base64
 import zipfile
@@ -120,6 +121,90 @@ def get_epub_metadata(file_path: str) -> dict:
         "description": get_meta("description"),
         "cover": cover_b64,
     }
+
+
+def split_text_semantic(text: str, max_chars: int) -> list[str]:
+    """Split text into chunks respecting semantic boundaries.
+
+    Priority order:
+    1. Paragraph breaks (blank lines)
+    2. Sentence endings (. ! ? followed by space/newline)
+    3. Word boundaries (spaces)
+    4. Hard cut (only if a single unit exceeds max_chars)
+    """
+    # Split into paragraphs (separated by one or more blank lines)
+    paragraphs = re.split(r"\n\s*\n", text)
+
+    chunks: list[str] = []
+    current = ""
+
+    for para in paragraphs:
+        para = para.strip()
+        if not para:
+            continue
+
+        # If adding this paragraph fits, just append it
+        candidate = (current + "\n\n" + para) if current else para
+        if len(candidate) <= max_chars:
+            current = candidate
+            continue
+
+        # Paragraph doesn't fit — try to split it by sentences
+        if current:
+            # If current chunk already has content, save it first
+            chunks.append(current.strip())
+            current = ""
+
+        # If the whole paragraph fits on its own, use it directly
+        if len(para) <= max_chars:
+            current = para
+            continue
+
+        # Paragraph is too large — break into sentences
+        sentences = re.split(r"(?<=[.!?])\s+", para)
+
+        for sentence in sentences:
+            candidate = (current + " " + sentence) if current else sentence
+            if len(candidate) <= max_chars:
+                current = candidate
+                continue
+
+            # Sentence doesn't fit with current — flush current
+            if current:
+                chunks.append(current.strip())
+                current = ""
+
+            # If the sentence itself fits, start a new chunk with it
+            if len(sentence) <= max_chars:
+                current = sentence
+                continue
+
+            # Sentence too large — break by words
+            words = sentence.split()
+            for word in words:
+                candidate = (current + " " + word) if current else word
+                if len(candidate) <= max_chars:
+                    current = candidate
+                    continue
+
+                if current:
+                    chunks.append(current.strip())
+
+                # Word itself exceeds max_chars — hard cut
+                if len(word) > max_chars:
+                    for i in range(0, len(word), max_chars):
+                        piece = word[i:i + max_chars]
+                        if i + max_chars < len(word):
+                            chunks.append(piece)
+                        else:
+                            current = piece
+                else:
+                    current = word
+
+    if current.strip():
+        chunks.append(current.strip())
+
+    return chunks
 
 
 # WaveNet neural voices mapped by language code
@@ -272,10 +357,7 @@ def split_txt():
     if not text.strip():
         return jsonify({"error": "O arquivo está vazio."}), 400
 
-    # Split text into chunks
-    chunks = []
-    for i in range(0, len(text), chunk_size):
-        chunks.append(text[i:i + chunk_size])
+    chunks = split_text_semantic(text, chunk_size)
 
     # Create ZIP in memory
     base_name = Path(file.filename).stem
