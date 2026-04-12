@@ -23,6 +23,14 @@
     const progressFill = document.getElementById("progress-fill");
     const uploadStatus = document.getElementById("upload-status");
 
+    // TXT Split elements
+    const dropZoneTxt = document.getElementById("drop-zone-txt");
+    const fileInputTxt = document.getElementById("file-input-txt");
+    const btnSelectTxt = document.getElementById("btn-select-txt");
+    const chunkSizeInput = document.getElementById("chunk-size");
+    const tabEpub = document.getElementById("tab-epub");
+    const tabSplit = document.getElementById("tab-split");
+
     const sidebar = document.getElementById("sidebar");
     const toc = document.getElementById("toc");
     const bookCover = document.getElementById("book-cover");
@@ -43,6 +51,146 @@
     const btnToggleSidebar = document.getElementById("btn-toggle-sidebar");
     const btnTheme = document.getElementById("btn-theme");
     const ttsLanguage = document.getElementById("tts-language");
+
+    // --- Tab Switching ---
+    function switchTab(tab) {
+        var panels = uploadSection.querySelectorAll(".upload-area");
+        panels.forEach(function (p) { p.classList.add("hidden"); });
+        tabEpub.classList.remove("active");
+        tabSplit.classList.remove("active");
+
+        if (tab === "epub") {
+            dropZone.classList.remove("hidden");
+            tabEpub.classList.add("active");
+        } else {
+            dropZoneTxt.classList.remove("hidden");
+            tabSplit.classList.add("active");
+        }
+    }
+
+    tabEpub.addEventListener("click", function () { switchTab("epub"); });
+    tabSplit.addEventListener("click", function () { switchTab("split"); });
+
+    // --- TXT Split Upload ---
+    btnSelectTxt.addEventListener("click", function () {
+        fileInputTxt.click();
+    });
+
+    dropZoneTxt.addEventListener("click", function (e) {
+        if (e.target !== btnSelectTxt && !btnSelectTxt.contains(e.target)
+            && e.target.tagName !== "INPUT" && e.target.tagName !== "LABEL") {
+            fileInputTxt.click();
+        }
+    });
+
+    dropZoneTxt.addEventListener("dragover", function (e) {
+        e.preventDefault();
+        dropZoneTxt.classList.add("dragover");
+    });
+
+    dropZoneTxt.addEventListener("dragleave", function () {
+        dropZoneTxt.classList.remove("dragover");
+    });
+
+    dropZoneTxt.addEventListener("drop", function (e) {
+        e.preventDefault();
+        dropZoneTxt.classList.remove("dragover");
+        var files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleTxtFile(files[0]);
+        }
+    });
+
+    fileInputTxt.addEventListener("change", function () {
+        if (fileInputTxt.files.length > 0) {
+            handleTxtFile(fileInputTxt.files[0]);
+        }
+    });
+
+    function handleTxtFile(file) {
+        if (!file.name.toLowerCase().endsWith(".txt")) {
+            alert("Por favor, selecione um arquivo TXT.");
+            return;
+        }
+
+        if (file.size > 50 * 1024 * 1024) {
+            alert("O arquivo excede o limite de 50MB.");
+            return;
+        }
+
+        uploadTxtFile(file);
+    }
+
+    function uploadTxtFile(file) {
+        dropZoneTxt.classList.add("hidden");
+        uploadProgress.classList.remove("hidden");
+        progressFill.style.width = "20%";
+        uploadStatus.textContent = "Enviando e dividindo arquivo...";
+
+        var formData = new FormData();
+        formData.append("file", file);
+        formData.append("chunk_size", chunkSizeInput.value || "5000");
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "/split-txt", true);
+        xhr.responseType = "blob";
+
+        xhr.upload.addEventListener("progress", function (e) {
+            if (e.lengthComputable) {
+                var pct = Math.round((e.loaded / e.total) * 60) + 20;
+                progressFill.style.width = pct + "%";
+            }
+        });
+
+        xhr.addEventListener("load", function () {
+            if (xhr.status === 200) {
+                progressFill.style.width = "100%";
+                uploadStatus.textContent = "Download pronto!";
+
+                // Trigger download of the ZIP
+                var blob = xhr.response;
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement("a");
+                var baseName = file.name.replace(/\.txt$/i, "");
+                a.href = url;
+                a.download = baseName + "_dividido.zip";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                setTimeout(resetTxtUpload, 1500);
+            } else {
+                // Read error from blob response
+                var reader = new FileReader();
+                reader.onload = function () {
+                    try {
+                        var err = JSON.parse(reader.result);
+                        uploadStatus.textContent = "Erro: " + (err.error || "Falha no processamento");
+                    } catch (_e) {
+                        uploadStatus.textContent = "Erro no processamento.";
+                    }
+                };
+                reader.readAsText(xhr.response);
+                progressFill.style.width = "0%";
+                setTimeout(resetTxtUpload, 2000);
+            }
+        });
+
+        xhr.addEventListener("error", function () {
+            uploadStatus.textContent = "Erro de conexão. Tente novamente.";
+            setTimeout(resetTxtUpload, 2000);
+        });
+
+        xhr.send(formData);
+    }
+
+    function resetTxtUpload() {
+        dropZoneTxt.classList.remove("hidden");
+        uploadProgress.classList.add("hidden");
+        progressFill.style.width = "0%";
+        fileInputTxt.value = "";
+    }
 
     // --- Theme ---
     function initTheme() {

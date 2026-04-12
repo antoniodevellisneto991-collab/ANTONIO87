@@ -7,6 +7,7 @@ import os
 import io
 import uuid
 import base64
+import zipfile
 from pathlib import Path
 
 from flask import (
@@ -247,6 +248,51 @@ def text_to_speech():
 
     audio_b64 = base64.b64encode(audio).decode("utf-8")
     return jsonify({"audio": audio_b64, "format": "mp3"})
+
+
+@app.route("/split-txt", methods=["POST"])
+def split_txt():
+    if "file" not in request.files:
+        return jsonify({"error": "Nenhum arquivo enviado"}), 400
+
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"error": "Nenhum arquivo selecionado"}), 400
+
+    ext = Path(file.filename).suffix.lower()
+    if ext != ".txt":
+        return jsonify({"error": "Formato não suportado. Envie um arquivo TXT."}), 400
+
+    chunk_size = request.form.get("chunk_size", 5000, type=int)
+    if chunk_size < 100 or chunk_size > 50000:
+        return jsonify({"error": "Tamanho do chunk deve ser entre 100 e 50000 caracteres."}), 400
+
+    text = file.read().decode("utf-8", errors="replace")
+
+    if not text.strip():
+        return jsonify({"error": "O arquivo está vazio."}), 400
+
+    # Split text into chunks
+    chunks = []
+    for i in range(0, len(text), chunk_size):
+        chunks.append(text[i:i + chunk_size])
+
+    # Create ZIP in memory
+    base_name = Path(file.filename).stem
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        for idx, chunk in enumerate(chunks, start=1):
+            part_name = f"{base_name}_parte_{idx:03d}.txt"
+            zf.writestr(part_name, chunk)
+
+    zip_buffer.seek(0)
+
+    return send_file(
+        zip_buffer,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=f"{base_name}_dividido.zip",
+    )
 
 
 @app.route("/health")
