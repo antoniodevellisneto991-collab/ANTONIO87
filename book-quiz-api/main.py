@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from fastapi import FastAPI, HTTPException, UploadFile, File, Query
 from dotenv import load_dotenv
 
@@ -9,6 +10,7 @@ from concepts import (
     parse_concepts_json, select_top_concepts, chunk_text_map,
     filter_by_chapters, filter_chunks_by_chapters,
 )
+from embeddings import load_embedding_index, load_embedding_matrix
 from storage import save_quiz, list_quizzes, load_quiz
 
 load_dotenv()
@@ -83,6 +85,8 @@ async def create_quiz_from_concepts(
     max_concepts: int = Query(default=8, ge=1, le=200, description="Conceitos mais centrais a usar"),
     chapters: list[str] = Query(default=[], description="Filtrar por capítulo(s): ch01, ch02, ..."),
     validate: bool = Query(default=True, description="Auditar fidelidade de cada diálogo à teoria"),
+    embedding_index_file: Optional[UploadFile] = File(default=None, description="embedding_index.json (opcional, âncora objetiva)"),
+    embeddings_npy_file: Optional[UploadFile] = File(default=None, description="embeddings.npy (opcional, âncora objetiva)"),
 ):
     """Gera N perguntas POR conceito curado; as respostas são orientadas pelos trechos auditados."""
     if not os.getenv("OPENAI_API_KEY"):
@@ -110,7 +114,18 @@ async def create_quiz_from_concepts(
     text_map = chunk_text_map(filtered_chunks)
     book_id = book_id_from(chunks)
 
-    questions = await generate_quiz_from_concepts(concepts, text_map, questions_per_concept, validate)
+    # Âncora objetiva opcional: carrega os embeddings se os dois arquivos vierem.
+    emb_index = emb_matrix = None
+    if embedding_index_file is not None and embeddings_npy_file is not None:
+        try:
+            emb_index = load_embedding_index((await embedding_index_file.read()).decode("utf-8", errors="replace"))
+            emb_matrix = load_embedding_matrix(await embeddings_npy_file.read())
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Embeddings inválidos: {e}")
+
+    questions = await generate_quiz_from_concepts(
+        concepts, text_map, questions_per_concept, validate, emb_index, emb_matrix
+    )
 
     quiz = QuizOutput(
         book_title=book_id,

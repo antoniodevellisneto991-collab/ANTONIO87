@@ -284,9 +284,18 @@ async def _answer_grounded(question: str, context: str) -> str:
 
 
 async def generate_quiz_from_concepts(
-    concepts: list[dict], text_map: dict, questions_per_concept: int = 2, validate: bool = True
+    concepts: list[dict],
+    text_map: dict,
+    questions_per_concept: int = 2,
+    validate: bool = True,
+    emb_index: dict | None = None,
+    emb_matrix=None,
 ) -> list[QA]:
-    """Para cada conceito curado, gera N perguntas e responde orientado pelos trechos auditados."""
+    """Para cada conceito curado, gera N perguntas e responde orientado pelos trechos auditados.
+
+    Se emb_index/emb_matrix forem fornecidos, adiciona a âncora objetiva: similaridade de
+    cosseno entre o diálogo gerado e os embeddings dos chunks do conceito.
+    """
     from concepts import context_for_concept
 
     # Fase 1 — gerar N perguntas por conceito (em paralelo).
@@ -321,7 +330,7 @@ async def generate_quiz_from_concepts(
         for (concept, q), ans in zip(items, answers)
     ]
 
-    # Fase 3 — auditar a fidelidade de cada diálogo à teoria do conceito.
+    # Fase 3a — juiz LLM: audita a fidelidade de cada diálogo à teoria do conceito.
     if validate:
         validations = await asyncio.gather(*[
             _validate_qa(concept["term"], contexts[concept["term"]], q, ans)
@@ -329,5 +338,25 @@ async def generate_quiz_from_concepts(
         ])
         for qa, v in zip(qas, validations):
             qa.validation = v
+
+    # Fase 3b — âncora objetiva: similaridade de embeddings (diálogo x conceito).
+    if emb_index is not None and emb_matrix is not None:
+        from embeddings import concept_vector, embed_text, cosine
+
+        # Vetor de cada conceito = média dos vetores dos seus chunks.
+        concept_vecs = {
+            c["term"]: concept_vector(c["chunk_ids"], emb_index, emb_matrix)
+            for c in concepts
+        }
+        # Vetoriza cada diálogo (pergunta + resposta) no mesmo espaço.
+        dialog_vecs = await asyncio.gather(*[
+            embed_text(f"{q}\n{ans}") for (concept, q), ans in zip(items, answers)
+        ])
+        for qa, (concept, _q), dvec in zip(qas, items, dialog_vecs):
+            sim = cosine(dvec, concept_vecs.get(concept["term"]))
+            if qa.validation is None:
+                qa.validation = Validation(similarity=sim)
+            else:
+                qa.validation.similarity = sim
 
     return qas

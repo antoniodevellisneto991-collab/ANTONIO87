@@ -16,9 +16,13 @@ class BookInput(BaseModel):
 
 
 class Validation(BaseModel):
-    coincide: bool = Field(description="O diálogo realmente instancia o conceito?")
-    score: float = Field(ge=0.0, le=1.0, description="Quão fiel o diálogo é à teoria (0 a 1)")
-    analise: str = Field(description="Justificativa curta da avaliação")
+    coincide: Optional[bool] = Field(default=None, description="O diálogo instancia o conceito? (juiz LLM)")
+    score: Optional[float] = Field(default=None, ge=0.0, le=1.0, description="Fidelidade à teoria 0-1 (juiz LLM)")
+    analise: str = Field(default="", description="Justificativa curta do juiz LLM")
+    similarity: Optional[float] = Field(
+        default=None,
+        description="Âncora objetiva: cosseno entre o diálogo e os embeddings do conceito",
+    )
 
 
 class QA(BaseModel):
