@@ -28,6 +28,7 @@ class QuizOutput(BaseModel):
     book_title: str
     total_questions: int
     questions: list[QA]
+    quiz_id: Optional[str] = Field(default=None, description="Id do quiz salvo em disco")
 
 
 class AuditedChunk(BaseModel):

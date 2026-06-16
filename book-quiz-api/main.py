@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from models import BookInput, QuizOutput
 from llm import generate_quiz, generate_quiz_from_dna
 from dna import parse_audit_jsonl, included, book_id_from
+from storage import save_quiz, list_quizzes, load_quiz
 
 load_dotenv()
 
@@ -30,11 +31,13 @@ async def create_quiz(book: BookInput):
 
     questions = await generate_quiz(book)
 
-    return QuizOutput(
+    quiz = QuizOutput(
         book_title=book.title,
         total_questions=len(questions),
         questions=questions,
     )
+    quiz.quiz_id = save_quiz(quiz, source="manual")["quiz_id"]
+    return quiz
 
 
 @app.post("/quiz/dna", response_model=QuizOutput)
@@ -58,8 +61,25 @@ async def create_quiz_from_dna(
     book_id = book_id_from(chunks)
     questions = await generate_quiz_from_dna(chunks, book_id, num_questions)
 
-    return QuizOutput(
+    quiz = QuizOutput(
         book_title=book_id,
         total_questions=len(questions),
         questions=questions,
     )
+    quiz.quiz_id = save_quiz(quiz, source="dna")["quiz_id"]
+    return quiz
+
+
+@app.get("/quizzes")
+async def get_quizzes():
+    """Lista os quizzes já salvos (resumo)."""
+    return list_quizzes()
+
+
+@app.get("/quizzes/{quiz_id}")
+async def get_quiz(quiz_id: str):
+    """Retorna um quiz salvo completo pelo id."""
+    quiz = load_quiz(quiz_id)
+    if quiz is None:
+        raise HTTPException(status_code=404, detail="Quiz não encontrado")
+    return quiz
