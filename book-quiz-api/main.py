@@ -21,11 +21,11 @@ async def health():
 
 @app.post("/quiz", response_model=QuizOutput)
 async def create_quiz(book: BookInput):
-    if not os.getenv("OPENAI_API_KEY"):
-        raise HTTPException(status_code=503, detail="OPENAI_API_KEY não configurada")
-
     if not book.chapters:
         raise HTTPException(status_code=400, detail="O livro deve ter ao menos um capítulo")
+
+    if not os.getenv("OPENAI_API_KEY"):
+        raise HTTPException(status_code=503, detail="OPENAI_API_KEY não configurada")
 
     questions = await generate_quiz(book)
 
