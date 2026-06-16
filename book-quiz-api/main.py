@@ -43,7 +43,7 @@ async def create_quiz(book: BookInput):
 @app.post("/quiz/dna", response_model=QuizOutput)
 async def create_quiz_from_dna(
     file: UploadFile = File(..., description="Arquivo llm_audit.content.jsonl do DNA do Livro"),
-    num_questions: int = Query(default=5, ge=1, le=20),
+    num_questions: int = Query(default=5, ge=1, le=50),
 ):
     """Gera perguntas+respostas a partir de um llm_audit.content.jsonl, com rastreabilidade por chunk_id."""
     if not os.getenv("OPENAI_API_KEY"):

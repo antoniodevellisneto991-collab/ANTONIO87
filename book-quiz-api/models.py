@@ -18,6 +18,10 @@ class BookInput(BaseModel):
 class QA(BaseModel):
     question: str
     answer: str
+    concept: Optional[str] = Field(
+        default=None,
+        description="Conceito de Goffman que é o eixo (oculto) da pergunta",
+    )
     source_chunks: list[str] = Field(
         default_factory=list,
         description="chunk_ids do DNA que fundamentam a pergunta (rastreabilidade)",
