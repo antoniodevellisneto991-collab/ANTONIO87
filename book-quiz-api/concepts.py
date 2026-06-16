@@ -31,6 +31,25 @@ def select_top_concepts(concepts: list[dict], k: int) -> list[dict]:
     return ranked[:k] if k and k > 0 else ranked
 
 
+def filter_by_chapters(concepts: list[dict], chapters: list[str]) -> list[dict]:
+    """Retorna só os conceitos que aparecem em pelo menos um dos capítulos pedidos."""
+    if not chapters:
+        return concepts
+    wanted = {c.strip().lower() for c in chapters}
+    return [
+        c for c in concepts
+        if any(ch.strip().lower() in wanted for ch in c.get("chapters", []))
+    ]
+
+
+def filter_chunks_by_chapters(chunks: list[AuditedChunk], chapters: list[str]) -> list[AuditedChunk]:
+    """Filtra chunks pelo chapter_id."""
+    if not chapters:
+        return chunks
+    wanted = {c.strip().lower() for c in chapters}
+    return [c for c in chunks if (c.chapter_id or "").strip().lower() in wanted]
+
+
 def chunk_text_map(chunks: list[AuditedChunk]) -> dict:
     """Mapa chunk_id -> texto, vindo do llm_audit.content.jsonl."""
     return {c.chunk_id: c.text for c in chunks if c.chunk_id and c.text}

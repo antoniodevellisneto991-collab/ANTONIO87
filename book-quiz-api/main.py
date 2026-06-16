@@ -5,7 +5,10 @@ from dotenv import load_dotenv
 from models import BookInput, QuizOutput
 from llm import generate_quiz, generate_quiz_from_dna, generate_quiz_from_concepts
 from dna import parse_audit_jsonl, included, book_id_from
-from concepts import parse_concepts_json, select_top_concepts, chunk_text_map
+from concepts import (
+    parse_concepts_json, select_top_concepts, chunk_text_map,
+    filter_by_chapters, filter_chunks_by_chapters,
+)
 from storage import save_quiz, list_quizzes, load_quiz
 
 load_dotenv()
@@ -77,6 +80,7 @@ async def create_quiz_from_concepts(
     audit_file: UploadFile = File(..., description="llm_audit.content.jsonl (orienta as respostas)"),
     questions_per_concept: int = Query(default=2, ge=1, le=10),
     max_concepts: int = Query(default=8, ge=1, le=200, description="Conceitos mais centrais a usar"),
+    chapters: list[str] = Query(default=[], description="Filtrar por capítulo(s): ch01, ch02, ..."),
 ):
     """Gera N perguntas POR conceito curado; as respostas são orientadas pelos trechos auditados."""
     if not os.getenv("OPENAI_API_KEY"):
@@ -94,8 +98,14 @@ async def create_quiz_from_concepts(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"llm_audit.content.jsonl inválido: {e}")
 
-    concepts = select_top_concepts(all_concepts, max_concepts)
-    text_map = chunk_text_map(chunks)
+    filtered_concepts = filter_by_chapters(all_concepts, chapters) if chapters else all_concepts
+    if not filtered_concepts:
+        raise HTTPException(status_code=404, detail=f"Nenhum conceito encontrado nos capítulos: {chapters}")
+
+    filtered_chunks = filter_chunks_by_chapters(chunks, chapters) if chapters else chunks
+
+    concepts = select_top_concepts(filtered_concepts, max_concepts)
+    text_map = chunk_text_map(filtered_chunks)
     book_id = book_id_from(chunks)
 
     questions = await generate_quiz_from_concepts(concepts, text_map, questions_per_concept)
