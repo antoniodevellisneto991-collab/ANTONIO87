@@ -172,3 +172,96 @@ async def generate_quiz_from_dna(
         )
         for q, ans in zip(questions, answers)
     ]
+
+
+# --- Fluxo por conceito curado: N perguntas por conceito; respostas orientadas pelo conteúdo ---
+
+GEN_CONCEPT_PROMPT = """Você vai criar {n} pergunta(s) DIFERENTE(S) para iniciar diálogos reais entre
+duas pessoas comuns.
+
+O EIXO OCULTO de todas elas é este conceito (use-o apenas como lente por trás da cena):
+Conceito: {term}
+Definição: {definition}
+
+Regras para cada pergunta:
+- ser uma situação concreta e cotidiana de interação entre pessoas — algo que alguém realmente diria
+  ou perguntaria numa conversa;
+- NUNCA citar o conceito, nem Goffman, nem soar teórica/acadêmica. A pergunta NÃO é sobre o conceito,
+  é uma cena onde ele aparece na prática;
+- as {n} situações devem ser bem diferentes entre si.
+
+Responda APENAS em JSON válido (sem markdown):
+{{"questions": ["...", "..."]}}"""
+
+ANSWER_GROUNDED_PROMPT = """Duas pessoas estão conversando numa situação cotidiana. A primeira disse:
+
+"{question}"
+
+Para responder de forma fiel, considere COMO o material abaixo descreve esse tipo de situação
+(use como orientação, mas SEM citá-lo):
+{context}
+
+Responda como a segunda pessoa responderia numa conversa real: concreta, natural e prática, coerente
+com a dinâmica descrita acima, mas SEM citar teorias, autores ou termos técnicos. 2 a 4 frases."""
+
+
+async def _generate_questions_for_concept(term: str, definition: str, n: int) -> list[str]:
+    prompt = GEN_CONCEPT_PROMPT.format(n=n, term=term, definition=definition or "(sem definição)")
+    response = await client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.9,
+        response_format={"type": "json_object"},
+    )
+    data = json.loads(response.choices[0].message.content)
+    items = data if isinstance(data, list) else next(iter(data.values()))
+    return [q for q in items if isinstance(q, str) and q.strip()]
+
+
+async def _answer_grounded(question: str, context: str) -> str:
+    prompt = ANSWER_GROUNDED_PROMPT.format(question=question, context=context or "(sem contexto)")
+    response = await client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.8,
+    )
+    return (response.choices[0].message.content or "").strip()
+
+
+async def generate_quiz_from_concepts(
+    concepts: list[dict], text_map: dict, questions_per_concept: int = 2
+) -> list[QA]:
+    """Para cada conceito curado, gera N perguntas e responde orientado pelos trechos auditados."""
+    from concepts import context_for_concept
+
+    # Fase 1 — gerar N perguntas por conceito (em paralelo).
+    gen = await asyncio.gather(*[
+        _generate_questions_for_concept(c["term"], c["definition"], questions_per_concept)
+        for c in concepts
+    ])
+
+    # Achata mantendo o vínculo pergunta -> conceito e pré-calcula o contexto de cada conceito.
+    items: list[tuple] = []
+    contexts: dict = {}
+    for concept, qs in zip(concepts, gen):
+        contexts[concept["term"]] = context_for_concept(concept, text_map)
+        for q in qs:
+            items.append((concept, q))
+
+    if not items:
+        return []
+
+    # Fase 2 — responder cada pergunta orientada pelo conteúdo auditado do conceito.
+    answers = await asyncio.gather(*[
+        _answer_grounded(q, contexts[concept["term"]]) for concept, q in items
+    ])
+
+    return [
+        QA(
+            question=q,
+            answer=ans,
+            concept=concept["term"],
+            source_chunks=concept["chunk_ids"],
+        )
+        for (concept, q), ans in zip(items, answers)
+    ]

@@ -3,8 +3,9 @@ from fastapi import FastAPI, HTTPException, UploadFile, File, Query
 from dotenv import load_dotenv
 
 from models import BookInput, QuizOutput
-from llm import generate_quiz, generate_quiz_from_dna
+from llm import generate_quiz, generate_quiz_from_dna, generate_quiz_from_concepts
 from dna import parse_audit_jsonl, included, book_id_from
+from concepts import parse_concepts_json, select_top_concepts, chunk_text_map
 from storage import save_quiz, list_quizzes, load_quiz
 
 load_dotenv()
@@ -67,6 +68,44 @@ async def create_quiz_from_dna(
         questions=questions,
     )
     quiz.quiz_id = save_quiz(quiz, source="dna")["quiz_id"]
+    return quiz
+
+
+@app.post("/quiz/concepts", response_model=QuizOutput)
+async def create_quiz_from_concepts(
+    concepts_file: UploadFile = File(..., description="concepts.json (índice curado de conceitos)"),
+    audit_file: UploadFile = File(..., description="llm_audit.content.jsonl (orienta as respostas)"),
+    questions_per_concept: int = Query(default=2, ge=1, le=10),
+    max_concepts: int = Query(default=8, ge=1, le=200, description="Conceitos mais centrais a usar"),
+):
+    """Gera N perguntas POR conceito curado; as respostas são orientadas pelos trechos auditados."""
+    if not os.getenv("OPENAI_API_KEY"):
+        raise HTTPException(status_code=503, detail="OPENAI_API_KEY não configurada")
+
+    try:
+        all_concepts = parse_concepts_json((await concepts_file.read()).decode("utf-8", errors="replace"))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"concepts.json inválido: {e}")
+    if not all_concepts:
+        raise HTTPException(status_code=400, detail="Nenhum conceito encontrado no concepts.json")
+
+    try:
+        chunks = parse_audit_jsonl((await audit_file.read()).decode("utf-8", errors="replace"))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"llm_audit.content.jsonl inválido: {e}")
+
+    concepts = select_top_concepts(all_concepts, max_concepts)
+    text_map = chunk_text_map(chunks)
+    book_id = book_id_from(chunks)
+
+    questions = await generate_quiz_from_concepts(concepts, text_map, questions_per_concept)
+
+    quiz = QuizOutput(
+        book_title=book_id,
+        total_questions=len(questions),
+        questions=questions,
+    )
+    quiz.quiz_id = save_quiz(quiz, source="concepts")["quiz_id"]
     return quiz
 
 
