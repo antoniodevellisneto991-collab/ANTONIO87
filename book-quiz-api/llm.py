@@ -2,7 +2,7 @@ import os
 import json
 import asyncio
 from openai import AsyncOpenAI
-from models import BookInput, QA, AuditedChunk
+from models import BookInput, QA, AuditedChunk, Validation
 from dna import (
     format_chunks_for_prompt,
     iter_concept_axes,
@@ -148,7 +148,7 @@ async def _answer_question(question: str) -> str:
 
 
 async def generate_quiz_from_dna(
-    chunks: list[AuditedChunk], book_id: str, num_questions: int = 5
+    chunks: list[AuditedChunk], book_id: str, num_questions: int = 5, validate: bool = True
 ) -> list[QA]:
     # Percorre o livro e seleciona conceitos-eixo distribuídos por todos os capítulos.
     axes = select_axes(iter_concept_axes(chunks), num_questions)
@@ -163,7 +163,7 @@ async def generate_quiz_from_dna(
     # Fase 2 — executar cada pergunta no LLM (em paralelo) e coletar as respostas.
     answers = await asyncio.gather(*[_answer_question(q["question"]) for q in questions])
 
-    return [
+    qas = [
         QA(
             question=q["question"],
             answer=ans,
@@ -172,6 +172,61 @@ async def generate_quiz_from_dna(
         )
         for q, ans in zip(questions, answers)
     ]
+
+    # Fase 3 — auditar fidelidade, usando o texto do chunk de origem como base teórica.
+    if validate:
+        text_map = {c.chunk_id: c.text for c in chunks if c.chunk_id}
+        validations = await asyncio.gather(*[
+            _validate_qa(
+                q.get("concept") or "",
+                text_map.get(q.get("chunk_id"), ""),
+                q["question"],
+                ans,
+            )
+            for q, ans in zip(questions, answers)
+        ])
+        for qa, v in zip(qas, validations):
+            qa.validation = v
+
+    return qas
+
+
+# --- Fase 3: validação de fidelidade do diálogo (pergunta+resposta) à teoria do conceito ---
+
+VALIDATION_PROMPT = """Você é um auditor teórico rigoroso. Abaixo há um CONCEITO (com sua base teórica)
+e um DIÁLOGO (pergunta + resposta) que deveria EXEMPLIFICAR esse conceito na prática, sem citá-lo.
+
+Conceito: {term}
+Base teórica:
+{context}
+
+Diálogo:
+- Pergunta: {question}
+- Resposta: {answer}
+
+Avalie se o diálogo realmente INSTANCIA o conceito — isto é, se a dinâmica descrita na base teórica
+aparece de fato na cena (e não apenas de forma superficial ou tangencial).
+
+Responda APENAS em JSON válido (sem markdown):
+{{"coincide": true ou false, "score": número de 0.0 a 1.0, "analise": "1 a 2 frases explicando"}}"""
+
+
+async def _validate_qa(term: str, context: str, question: str, answer: str) -> Validation:
+    prompt = VALIDATION_PROMPT.format(
+        term=term, context=context or "(sem base)", question=question, answer=answer
+    )
+    response = await client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.0,
+        response_format={"type": "json_object"},
+    )
+    data = json.loads(response.choices[0].message.content)
+    return Validation(
+        coincide=bool(data.get("coincide", False)),
+        score=max(0.0, min(1.0, float(data.get("score", 0.0)))),
+        analise=str(data.get("analise", "")),
+    )
 
 
 # --- Fluxo por conceito curado: N perguntas por conceito; respostas orientadas pelo conteúdo ---
@@ -229,7 +284,7 @@ async def _answer_grounded(question: str, context: str) -> str:
 
 
 async def generate_quiz_from_concepts(
-    concepts: list[dict], text_map: dict, questions_per_concept: int = 2
+    concepts: list[dict], text_map: dict, questions_per_concept: int = 2, validate: bool = True
 ) -> list[QA]:
     """Para cada conceito curado, gera N perguntas e responde orientado pelos trechos auditados."""
     from concepts import context_for_concept
@@ -256,7 +311,7 @@ async def generate_quiz_from_concepts(
         _answer_grounded(q, contexts[concept["term"]]) for concept, q in items
     ])
 
-    return [
+    qas = [
         QA(
             question=q,
             answer=ans,
@@ -265,3 +320,14 @@ async def generate_quiz_from_concepts(
         )
         for (concept, q), ans in zip(items, answers)
     ]
+
+    # Fase 3 — auditar a fidelidade de cada diálogo à teoria do conceito.
+    if validate:
+        validations = await asyncio.gather(*[
+            _validate_qa(concept["term"], contexts[concept["term"]], q, ans)
+            for (concept, q), ans in zip(items, answers)
+        ])
+        for qa, v in zip(qas, validations):
+            qa.validation = v
+
+    return qas

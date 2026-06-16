@@ -15,6 +15,12 @@ class BookInput(BaseModel):
     language: str = Field(default="pt", description="Idioma das perguntas: 'pt' ou 'en'")
 
 
+class Validation(BaseModel):
+    coincide: bool = Field(description="O diálogo realmente instancia o conceito?")
+    score: float = Field(ge=0.0, le=1.0, description="Quão fiel o diálogo é à teoria (0 a 1)")
+    analise: str = Field(description="Justificativa curta da avaliação")
+
+
 class QA(BaseModel):
     question: str
     answer: str
@@ -25,6 +31,10 @@ class QA(BaseModel):
     source_chunks: list[str] = Field(
         default_factory=list,
         description="chunk_ids do DNA que fundamentam a pergunta (rastreabilidade)",
+    )
+    validation: Optional[Validation] = Field(
+        default=None,
+        description="Auditoria de fidelidade do diálogo à teoria do conceito",
     )
 
 

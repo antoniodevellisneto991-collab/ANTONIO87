@@ -48,6 +48,7 @@ async def create_quiz(book: BookInput):
 async def create_quiz_from_dna(
     file: UploadFile = File(..., description="Arquivo llm_audit.content.jsonl do DNA do Livro"),
     num_questions: int = Query(default=5, ge=1, le=50),
+    validate: bool = Query(default=True, description="Auditar fidelidade de cada diálogo à teoria"),
 ):
     """Gera perguntas+respostas a partir de um llm_audit.content.jsonl, com rastreabilidade por chunk_id."""
     if not os.getenv("OPENAI_API_KEY"):
@@ -63,7 +64,7 @@ async def create_quiz_from_dna(
         raise HTTPException(status_code=400, detail="Nenhum trecho auditado encontrado no arquivo")
 
     book_id = book_id_from(chunks)
-    questions = await generate_quiz_from_dna(chunks, book_id, num_questions)
+    questions = await generate_quiz_from_dna(chunks, book_id, num_questions, validate)
 
     quiz = QuizOutput(
         book_title=book_id,
@@ -81,6 +82,7 @@ async def create_quiz_from_concepts(
     questions_per_concept: int = Query(default=2, ge=1, le=10),
     max_concepts: int = Query(default=8, ge=1, le=200, description="Conceitos mais centrais a usar"),
     chapters: list[str] = Query(default=[], description="Filtrar por capítulo(s): ch01, ch02, ..."),
+    validate: bool = Query(default=True, description="Auditar fidelidade de cada diálogo à teoria"),
 ):
     """Gera N perguntas POR conceito curado; as respostas são orientadas pelos trechos auditados."""
     if not os.getenv("OPENAI_API_KEY"):
@@ -108,7 +110,7 @@ async def create_quiz_from_concepts(
     text_map = chunk_text_map(filtered_chunks)
     book_id = book_id_from(chunks)
 
-    questions = await generate_quiz_from_concepts(concepts, text_map, questions_per_concept)
+    questions = await generate_quiz_from_concepts(concepts, text_map, questions_per_concept, validate)
 
     quiz = QuizOutput(
         book_title=book_id,
