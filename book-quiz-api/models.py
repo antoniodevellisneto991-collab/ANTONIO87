@@ -18,9 +18,25 @@ class BookInput(BaseModel):
 class QA(BaseModel):
     question: str
     answer: str
+    source_chunks: list[str] = Field(
+        default_factory=list,
+        description="chunk_ids do DNA que fundamentam a pergunta (rastreabilidade)",
+    )
 
 
 class QuizOutput(BaseModel):
     book_title: str
     total_questions: int
     questions: list[QA]
+
+
+class AuditedChunk(BaseModel):
+    """Subconjunto dos campos de um registro de llm_audit.content.jsonl."""
+
+    chunk_id: str
+    chapter_id: Optional[str] = None
+    decision: Optional[str] = None
+    classifications: list[str] = Field(default_factory=list)
+    key_sentence: Optional[str] = None
+    text: str = ""
+    concepts: list[dict] = Field(default_factory=list)
